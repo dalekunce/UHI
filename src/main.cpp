@@ -113,14 +113,58 @@ unsigned long lastMqttAttemptMillis = 0;
 
 unsigned long lastPublish = 0;
 
-// Return a stable device identifier (formatted MAC address from efuse)
+// UUID helpers: generate UUIDv4 and store/read from SD at /device_id.txt
+static void generateUuidV4(char* out /* 37 bytes */) {
+  uint8_t b[16];
+  for (int i = 0; i < 4; ++i) {
+    uint32_t r = esp_random();
+    memcpy(&b[i * 4], &r, 4);
+  }
+  // set version to 4
+  b[6] = (b[6] & 0x0F) | 0x40;
+  // set variant to RFC4122
+  b[8] = (b[8] & 0x3F) | 0x80;
+  snprintf(out, 37,
+           "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+           b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]);
+}
+
 String getDeviceId() {
-  uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-  char buf[18];
-  snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
-           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  return String(buf);
+  const char* path = "/device_id.txt";
+  // If SD not available, fallback to efuse MAC formatted
+  if (!SD.begin(SD_CS_PIN)) {
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char buf[18];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(buf);
+  }
+
+  if (SD.exists(path)) {
+    File f = SD.open(path, FILE_READ);
+    if (f) {
+      char buf[64] = {0};
+      size_t r = f.readBytesUntil('\n', buf, sizeof(buf) - 1);
+      f.close();
+      if (r > 0) {
+        // trim whitespace
+        String s = String(buf);
+        s.trim();
+        if (s.length() > 0) return s;
+      }
+    }
+  }
+
+  // create a new UUID and store it
+  char uuid[37] = {0};
+  generateUuidV4(uuid);
+  File f = SD.open(path, FILE_WRITE);
+  if (f) {
+    f.println(uuid);
+    f.close();
+  }
+  return String(uuid);
 }
 
 void setupWiFi() {
