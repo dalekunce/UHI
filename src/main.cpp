@@ -113,6 +113,16 @@ unsigned long lastMqttAttemptMillis = 0;
 
 unsigned long lastPublish = 0;
 
+// Return a stable device identifier (formatted MAC address from efuse)
+String getDeviceId() {
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  char buf[18];
+  snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  return String(buf);
+}
+
 void setupWiFi() {
   delay(10);
   Serial.print("Connecting to WiFi ");
@@ -412,9 +422,10 @@ void loop() {
     if (lastGpsFixMillis != 0) gps_fix_age_s = (long)((now - lastGpsFixMillis) / 1000);
 
   // Build JSON with health fields
-  char payload[512];
-    int len = snprintf(payload, sizeof(payload), "{\"device\":\"esp32\",\"timestamp\":\"%s\",\"gps_fix\":%s,\"gps_fix_age_s\":%ld,\"lat\":%.6f,\"lng\":%.6f,\"temp_c\":%.2f,\"humidity_pct\":%.2f,\"pm2_5\":%.2f,\"wifi_ok\":%s,\"mqtt_ok\":%s,\"dht_ok\":%s,\"pm_ok\":%s}",
-      isoTime,
+  char payload[640];
+    String devId = getDeviceId();
+    int len = snprintf(payload, sizeof(payload), "{\"device\":\"esp32\",\"device_id\":\"%s\",\"timestamp\":\"%s\",\"gps_fix\":%s,\"gps_fix_age_s\":%ld,\"lat\":%.6f,\"lng\":%.6f,\"temp_c\":%.2f,\"humidity_pct\":%.2f,\"pm2_5\":%.2f,\"wifi_ok\":%s,\"mqtt_ok\":%s,\"dht_ok\":%s,\"pm_ok\":%s}",
+      devId.c_str(), isoTime,
       hasFix ? "true" : "false",
       gps_fix_age_s,
       hasFix ? lat : 0.0,
