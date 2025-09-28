@@ -130,7 +130,7 @@ static void generateUuidV4(char* out /* 37 bytes */) {
 }
 
 String getDeviceId() {
-  const char* path = "/device_id.txt";
+  const char* path = "/config.json";
   // If SD not available, fallback to efuse MAC formatted
   if (!SD.begin(SD_CS_PIN)) {
     uint8_t mac[6];
@@ -141,28 +141,39 @@ String getDeviceId() {
     return String(buf);
   }
 
+  StaticJsonDocument<512> doc;
+  // If config exists, read it
   if (SD.exists(path)) {
     File f = SD.open(path, FILE_READ);
     if (f) {
-      char buf[64] = {0};
-      size_t r = f.readBytesUntil('\n', buf, sizeof(buf) - 1);
+      DeserializationError err = deserializeJson(doc, f);
       f.close();
-      if (r > 0) {
-        // trim whitespace
-        String s = String(buf);
-        s.trim();
-        if (s.length() > 0) return s;
+      if (err) {
+        // malformed JSON - clear document and continue to create new one
+        doc.clear();
       }
     }
   }
 
-  // create a new UUID and store it
+  if (doc.containsKey("device_id")) {
+    String s = String(doc["device_id"].as<const char*>());
+    s.trim();
+    if (s.length() > 0) return s;
+  }
+
+  // generate a new UUID and write it into config.json, preserving other fields
   char uuid[37] = {0};
   generateUuidV4(uuid);
-  File f = SD.open(path, FILE_WRITE);
-  if (f) {
-    f.println(uuid);
-    f.close();
+  doc["device_id"] = uuid;
+  // ensure mqtt and runtime values are preserved if not present
+  if (!doc.containsKey("mqtt_server")) doc["mqtt_server"] = runtimeConfig.mqtt_server;
+  if (!doc.containsKey("mqtt_port")) doc["mqtt_port"] = runtimeConfig.mqtt_port;
+  if (!doc.containsKey("mqtt_topic")) doc["mqtt_topic"] = runtimeConfig.mqtt_topic;
+
+  File fw = SD.open(path, FILE_WRITE);
+  if (fw) {
+    serializeJson(doc, fw);
+    fw.close();
   }
   return String(uuid);
 }

@@ -56,12 +56,12 @@ JSON payload example
 
 	Device identifier (device_id)
 	-----------------------------
-	Each telemetry JSON payload includes a stable `device_id` field. By default the firmware generates a UUIDv4 on first boot and saves it to the SD card at `/device_id.txt`. The firmware reads that file on subsequent boots and publishes the same UUID with every telemetry record. This makes the identifier stable across reboots and avoids exposing the raw hardware MAC.
+	Each telemetry JSON payload includes a stable `device_id` field. By default the firmware generates a UUIDv4 on first boot and saves it to the SD card in `/config.json` under the `device_id` key. The firmware reads that file on subsequent boots and publishes the same UUID with every telemetry record. This makes the identifier stable across reboots and avoids exposing the raw hardware MAC.
 
 	Privacy / alternatives
 	----------------------
 	- If you prefer not to expose the raw MAC, you can change the firmware to generate and store a random UUID on first boot (saved to SD or NVS) and publish that instead.
-	- This firmware uses the SD-based UUID method by default (see `/device_id.txt`). If SD is unavailable at boot the firmware falls back to publishing the device's MAC address.
+	- This firmware uses the SD-based UUID method by default (see `/config.json` `device_id`). If SD is unavailable at boot the firmware falls back to publishing the device's MAC address.
 	- Another option is to publish a hash of the MAC (e.g., SHA1) to avoid exposing the full hardware address while keeping a stable identifier. If you want either of these behaviors I can add the implementation and an option in `src/secrets.example.cpp`.
 
 	JSON payload example
