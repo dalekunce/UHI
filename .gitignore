@@ -1,0 +1,2 @@
+# Ignore secrets file with credentials
+/src/secrets.cpp

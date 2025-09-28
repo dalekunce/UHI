@@ -1,0 +1,6 @@
+# Custom partition table (original project reserved a LittleFS area; this entry is now commented out)
+# name,   type, subtype, offset,    size, flags
+nvs,      data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xe000,   0x2000,
+app0,     app,  ota_0,   0x10000,  0x2e0000,
+# littlefs, data, spiffs, 0x2f0000, 0x100000,  # commented out: project uses SD card instead of LittleFS
