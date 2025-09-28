@@ -54,6 +54,15 @@ JSON payload example
 	- Deep sleep support for battery-powered deployments (configurable)
 	- Desktop helper scripts: `scripts/download_sd.py` (serial log download) and `scripts/hw_smoke_test.py` (hardware smoke test)
 
+	Device identifier (device_id)
+	-----------------------------
+	Each telemetry JSON payload now includes a stable `device_id` field. By default this is the device's burned-in Wi‑Fi MAC (efuse MAC) formatted as a colon-separated address (for example: `AA:BB:CC:DD:EE:FF`). This is useful for correlating MQTT messages, logs on the SD card, and inventory records.
+
+	Privacy / alternatives
+	----------------------
+	- If you prefer not to expose the raw MAC, you can change the firmware to generate and store a random UUID on first boot (saved to SD or NVS) and publish that instead.
+	- Another option is to publish a hash of the MAC (e.g., SHA1) to avoid exposing the full hardware address while keeping a stable identifier. If you want either of these behaviors I can add the implementation and an option in `src/secrets.example.cpp`.
+
 	JSON payload example
 	--------------------
 	{
