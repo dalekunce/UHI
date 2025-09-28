@@ -13,6 +13,13 @@
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
 
+#ifdef USE_LORAWAN
+// LoRa / LMIC includes (only used when building for LoRaWAN env)
+#include <lmic.h>
+#include <hal/hal.h>
+#include <SPI.h>
+#endif
+
 // ======= CONFIG - move secrets to src/secrets.cpp =======
 #include "secrets.h"
 
@@ -141,6 +148,29 @@ void setupWiFi() {
     Serial.println("WiFi connection failed");
   }
 }
+
+#ifdef USE_LORAWAN
+// Minimal LMIC/LoRa send helper (application must configure keys in secrets)
+void initLoRa() {
+  // LMIC init
+  os_init();
+  // Reset the MAC state. Session and pending data transfers will be discarded.
+  LMIC_reset();
+  // Set up channels, data rate, and other defaults as appropriate for your region
+  Serial.println("LoRa/LMIC initialized (stub)");
+}
+
+bool sendViaLoRa(const char* payload) {
+  // This is a stub to show where to enqueue the payload for LoRa transmission.
+  // A real implementation would call LMIC_setTxData2 / os_runloop_once etc.
+  Serial.print("[LoRa] would send: ");
+  Serial.println(payload);
+  return true;
+}
+#else
+// When not using LoRa, provide a no-op that returns false so caller can fallback
+bool sendViaLoRa(const char* payload) { (void)payload; return false; }
+#endif
 
 void reconnectMQTT() {
   // Exponential backoff and non-blocking attempts
@@ -450,6 +480,16 @@ void loop() {
     } else {
       Serial.println("MQTT not connected, skipping publish");
     }
+
+#ifdef USE_LORAWAN
+    // If built for LoRaWAN, send payload over LoRa as well (or instead)
+    if (!published) {
+      // if MQTT wasn't published, fallback to LoRa send
+      sendViaLoRa(payload);
+    } else {
+      // optionally also forward to LoRa; keep it simple and only send when MQTT not available
+    }
+#endif
 
     // If deep sleep is enabled, enter sleep to save battery
     if (ENABLE_DEEP_SLEEP) {
