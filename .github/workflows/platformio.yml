@@ -17,7 +17,7 @@ jobs:
         run: |
           if [ ! -f src/secrets.cpp ]; then
             mkdir -p src
-            echo "I2luY2x1ZGUgXCJzZWNyZXRzLmhcIi8KLy8gUGxhY2Vob2xkZXIgdmlhbHVlcyB1c2VkIG9ubHkgZm9yIFJJQy5jIiAgICAgIA==" | base64 -d > src/secrets.cpp
+            printf '%s\n' '#include "secrets.h"' '// Placeholder values used only for CI. Replace with real secrets locally.' 'const char* WIFI_SSID = "";' 'const char* WIFI_PASS = "";' '' 'const char* MQTT_SERVER = "";' 'int MQTT_PORT = 0;' 'const char* MQTT_TOPIC = "";' '' 'const bool ENABLE_DEEP_SLEEP = false;' 'const unsigned long DEEP_SLEEP_SECONDS = 60;' > src/secrets.cpp
           fi
 
       - name: Set up Python
