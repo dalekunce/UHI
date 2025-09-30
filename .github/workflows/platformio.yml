@@ -8,53 +8,34 @@ on:
 
 jobs:
   build:
-    name: Build (PlatformIO)
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Provide placeholder secrets for CI (no real secrets committed)
-      run: |
-        if [ ! -f src/secrets.cpp ]; then
-          echo "Creating temporary src/secrets.cpp for CI build"
-          mkdir -p src
-          cat > src/secrets.cpp <<'EOF'
-#include "secrets.h"
+      - name: Create placeholder secrets.cpp if missing
+        run: |
+          if [ ! -f src/secrets.cpp ]; then
+            mkdir -p src
+            echo "I2luY2x1ZGUgXCJzZWNyZXRzLmhcIi8KLy8gUGxhY2Vob2xkZXIgdmlhbHVlcyB1c2VkIG9ubHkgZm9yIFJJQy5jIiAgICAgIA==" | base64 -d > src/secrets.cpp
+          fi
 
-// Placeholder values used only for CI. Replace with real secrets locally.
-const char* WIFI_SSID = "";
-const char* WIFI_PASS = "";
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-const char* MQTT_SERVER = "broker.hivemq.com";
-int MQTT_PORT = 1883;
-const char* MQTT_TOPIC = "esp32/sensors/uhi";
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U platformio
 
-const bool ENABLE_DEEP_SLEEP = false;
-const unsigned long DEEP_SLEEP_SECONDS = 60;
-EOF
-        else
-          echo "src/secrets.cpp already present"
-        fi
+      - name: Build firmware (PlatformIO)
+        run: pio run -e esp32dev
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install -U platformio
-
-    - name: Run PlatformIO build
-      run: |
-        pio run -e esp32dev --silent
-
-    - name: Upload build artifacts
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware-artifacts
-        path: .pio/build
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-artifacts
+          path: .pio/build

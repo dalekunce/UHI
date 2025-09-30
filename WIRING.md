@@ -90,8 +90,6 @@ Notes:
 
 Notes:
 - If your breakout has a regulator and level shifters it may accept 5V, but 3.3V is safest.
-- If you want to use different SPI pins or HSPI/VSPI explicitly, update `SPI.begin(...)` and
-  `SD.begin(...)` accordingly in the code.
 
 ---
 
@@ -107,7 +105,7 @@ Notes:
           (VCC) │              │
                 │  [ EN  ]     │
                 │              │
-  DHT DATA o───│> [ GPIO4 ]   │ o GPIO2
+   DHT DATA o───│> [ GPIO4 ]   │ o GPIO2
                 │              │
                 │  [ GPIO16 ]  │<── GPS TX (GPS -> ESP RX1)
                 │  [ GPIO17 ]  │──> GPS RX (GPS <- ESP TX1)
@@ -132,9 +130,3 @@ Notes:
 - If SD mount fails, check that the card is FAT32-formatted, try a different card, and ensure CS pin
   matches `SD.begin()` in `src/main.cpp`.
 - If pins conflict with your board variant, pick other free UART-capable pins and update `src/main.cpp`.
-
----
-
-If you'd like, I can also add a small photo/diagram file (SVG/PNG) for the README or export a printable
-PDF with the wiring diagram.
-                                                                                                │  [ GPIO18 ]  │<── SD SCK
