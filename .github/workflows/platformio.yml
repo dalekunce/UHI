@@ -15,6 +15,29 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Provide placeholder secrets for CI (no real secrets committed)
+      run: |
+        if [ ! -f src/secrets.cpp ]; then
+          echo "Creating temporary src/secrets.cpp for CI build"
+          mkdir -p src
+          cat > src/secrets.cpp <<'EOF'
+#include "secrets.h"
+
+// Placeholder values used only for CI. Replace with real secrets locally.
+const char* WIFI_SSID = "";
+const char* WIFI_PASS = "";
+
+const char* MQTT_SERVER = "broker.hivemq.com";
+int MQTT_PORT = 1883;
+const char* MQTT_TOPIC = "esp32/sensors/uhi";
+
+const bool ENABLE_DEEP_SLEEP = false;
+const unsigned long DEEP_SLEEP_SECONDS = 60;
+EOF
+        else
+          echo "src/secrets.cpp already present"
+        fi
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
