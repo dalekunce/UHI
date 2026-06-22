@@ -30,7 +30,7 @@
 // Record interval in milliseconds
 const unsigned long RECORD_INTERVAL = 10000UL;
 const char* GLOBE_AIRTEMPS_FILE = "/airtemps_globe.csv";
-const char* GLOBE_AIRTEMPS_HEADER = "organization_id,org_name,site_id,site_name,latitude,longitude,elevation,measured_on,userid,measured_at,solar_measured_at,current_temp,comments,globe_teams,month";
+const char* GLOBE_AIRTEMPS_HEADER = "organization_id,org_name,site_id,site_name,latitude,longitude,elevation,measured_on,userid,measured_at,solar_measured_at,current_temp,humidity_pct,pm2_5,device_id,comments,globe_teams,month";
 
 // =============================================
 
@@ -290,14 +290,10 @@ void loop() {
       }
     }
 
-    // Build a compact comments string with extra measurements not present
-    // in the target GLOBE airTemps schema.
-    char comments[160] = {0};
+    // Build status/health info for comments field
+    char comments[96] = {0};
     snprintf(comments, sizeof(comments),
-             "device_id=%s;humidity_pct=%.2f;pm2_5=%.2f;dht_ok=%s;pm_ok=%s;gps_fix_age_s=%ld",
-             getDeviceId().c_str(),
-             isnan(humidity) ? 0.0f : humidity,
-             isnan(pm2_5) ? 0.0f : pm2_5,
+             "dht_ok=%s;pm_ok=%s;gps_fix_age_s=%ld",
              dht_ok ? "true" : "false",
              pm_ok ? "true" : "false",
              gps_fix_age_s);
@@ -319,6 +315,9 @@ void loop() {
       writeCsvText(lf, measuredAt); lf.print(',');
       writeCsvText(lf, ""); lf.print(',');
       writeCsvFloatOrBlank(lf, temperature, 1); lf.print(',');
+      writeCsvFloatOrBlank(lf, humidity, 2); lf.print(',');
+      writeCsvFloatOrBlank(lf, pm2_5, 2); lf.print(',');
+      writeCsvText(lf, getDeviceId().c_str()); lf.print(',');
       writeCsvText(lf, comments); lf.print(',');
       writeCsvText(lf, GLOBE_TEAMS); lf.print(',');
       writeCsvText(lf, monthName);

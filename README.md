@@ -27,6 +27,48 @@ Features
 	- `scripts/hw_smoke_test.py` — automated hardware smoke test that performs a serial download and validates the logs file.
 
 
+Firmware Variants
+-----------------
+### Main Variant (MQTT + SD logging)
+The default `src/` variant publishes telemetry via MQTT and logs JSON records to `/logs.jsonl` on the SD card.
+
+**Build & flash:**
+```bash
+pio run -e esp32dev              # build
+pio run -e esp32dev -t upload    # upload
+```
+
+### SD-Only Variant (GLOBE airTemps CSV)
+The `src-sd-only/` variant removes all WiFi/MQTT dependencies and writes records directly to `/airtemps_globe.csv` in the GLOBE/NASA air temperature data schema format. This is useful for offline data collection or integration with the GLOBE Observer platform.
+
+**Output format:** CSV with 18 columns (15 GLOBE standard + 3 sensor extensions):
+```
+organization_id,org_name,site_id,site_name,latitude,longitude,elevation,measured_on,userid,measured_at,solar_measured_at,current_temp,humidity_pct,pm2_5,device_id,comments,globe_teams,month
+,,189484,Dublin School,42.90861,-72.06333,488.0,2025-09-01,8294323,2025-09-01T00:01:00,,,18.5,55.20,12.30,550e8400-e29b-41d4-a716-446655440000,dht_ok=true;pm_ok=true,network_id,Sep
+```
+
+Extra sensor fields—`humidity_pct` (%), `pm2_5` (μg/m³), and `device_id` (UUID)—are written in their own columns. The `comments` field now contains only status flags.
+
+**Configuration:** Edit `src-sd-only/secrets.cpp` and populate GLOBE metadata fields before building:
+- `GLOBE_ORGANIZATION_ID` — Your organization's GLOBE ID (numeric string)
+- `GLOBE_ORG_NAME` — Organization name
+- `GLOBE_SITE_ID` — Your observation site ID (numeric string)
+- `GLOBE_SITE_NAME` — Site name
+- `GLOBE_ELEVATION_M` — Elevation above sea level (meters, as string)
+- `GLOBE_USER_ID` — Your GLOBE user ID (numeric string)
+- `GLOBE_TEAMS` — Comma-separated team IDs or names
+
+**Build & flash:**
+```bash
+pio run -e esp32dev-sd-only              # build
+pio run -e esp32dev-sd-only -t upload    # upload
+```
+
+**Data retrieval:** Same as main variant—send `D` over serial or remove SD card to access `/airtemps_globe.csv`.
+
+**Reference:** See [GLOBE Air Temperature Data Protocol](https://assets.globe.gov/protocol-data/airTemps/airTemps2025/airTemps2025Sep.csv) for official schema details.
+
+
 JSON payload example
 --------------------
 {
@@ -129,8 +171,6 @@ JSON payload example
 	pio device monitor -b 115200
 	```
 
-
-
 	Serial download (retrieve logs without removing SD)
 	-------------------------------------------------
 	Send a single capital `D` character over the serial port and the device will stream `/logs.jsonl` between markers:
@@ -155,16 +195,6 @@ JSON payload example
 	python3 scripts/hw_smoke_test.py /dev/tty.SLAB_USBtoUART
 	```
 
-	CI / GitHub Actions
-	-------------------
-	A GitHub Actions workflow is included at `.github/workflows/platformio.yml` that builds the firmware on push and pull requests using PlatformIO. This helps catch missing dependencies or build regressions early.
-
-	Repository hygiene and notes
-	---------------------------
-	- Real secret files (`src/secrets.cpp`) are Git-ignored. Never commit private keys or passwords.
-	- Example secret files (`src/secrets.example.*`) are safe to commit and are included to help new contributors onboard quickly.
-	- `.gitignore` excludes PlatformIO build artifacts, editor files, and local secrets.
-
 	Integration notes
 	-----------------
 	This project can work with either the SPI `SD` library (external microSD module) or the `SD_MMC` interface (native SD slot on some ESP32 boards). Update `src/main.cpp` if you need to change pins or the SD interface.
@@ -172,14 +202,3 @@ JSON payload example
 	Deep sleep & battery tips
 	-------------------------
 	Enable deep sleep in `src/secrets.cpp` by setting `ENABLE_DEEP_SLEEP = true` and choose an appropriate `DEEP_SLEEP_SECONDS`. Remember that deep sleep cycles will reinitialize Wi‑Fi and sensors on each wake, which affects power consumption.
-
-
-	Next steps and contribution ideas
-	---------------------------------
-	- Add a small script to copy example secrets into active secrets files with interactive prompts
-	- Add CI checks to scan for accidentally committed secrets
-
-	License and attribution
-	-----------------------
-	See `LICENSE` (if present) and individual source headers for upstream library licenses.
-
